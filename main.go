@@ -3,7 +3,9 @@ package main
 import (
 	"fmt"
 	"log"
+	"net"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 )
@@ -50,5 +52,19 @@ func phptarpit(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	http.HandleFunc("/", phptarpit)
-	http.ListenAndServe(":8081", nil)
+
+	const path string = "/tmp/tarpit"
+	os.Remove(path)
+
+	listener, err := net.Listen("unix", path)
+	if err != nil {
+		log.Panic(err)
+	}
+	defer os.Remove(path)
+
+	if err := os.Chmod(path, 0666); err != nil {
+		log.Panic(err)
+	}
+
+	http.Serve(listener, nil)
 }
